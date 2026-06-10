@@ -1,6 +1,7 @@
 package commands
 
 import core.CommandInvoker
+import exceptions.CollectionHasNoElementException
 
 /**
  * Команда для удаления элемента по id.
@@ -22,6 +23,10 @@ class RemoveByIdCommand(override val ci: CommandInvoker): Command(ci) {
             ci.cm.removeElement(value)
             result = "Элемент $value успешно удалён.\n"
             ci.io.logger.info("Элемент $value удалён.")
+        }
+        catch (e: CollectionHasNoElementException) {
+            result = e.message + "\n"
+            ci.io.logger.warning(e.message)
         }
         catch (e: NumberFormatException) {
             result = "${arguments[0]} не является id элемента.\n"

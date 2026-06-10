@@ -39,15 +39,9 @@ class CommandInvoker(val cm: CollectionManager): CommandInvokerInterface {
     fun runOnServer(command: String) {
         when (command.trim()) {
             "exit" -> {
-                runOnServer("save")
                 val exit = ExitCommand(this)
                 io.logger.info("Выполняется выход.")
                 exit.execute(listOf(""))
-            }
-            "save" -> {
-                val save = SaveCommand(this)
-                io.logger.info("Выполняется сохранение.")
-                save.execute(listOf(""))
             }
             else -> return
         }

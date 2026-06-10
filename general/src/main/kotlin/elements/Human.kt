@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
  * @param height
  */
 @Serializable
-class Human(private val name: String, private val age: Long, private val height: Float) {
+class Human(val name: String, val age: Long, val height: Float) {
     init{
         if (name == "") throw InvalidElementValueException(name)
         if (age <= 0) throw InvalidElementValueException(age)

@@ -2,10 +2,9 @@ package core
 
 import commands.CommandWrapper
 import exceptions.ProgramExitException
+import kotlinx.serialization.json.Json
 import java.net.DatagramPacket
 import java.net.DatagramSocket
-import kotlinx.serialization.json.Json.Default.decodeFromString
-import kotlinx.serialization.json.Json.Default.encodeToString
 import java.net.InetAddress
 
 class ConnectionReceiver(private val ci: CommandInvoker, private val port: Int) {
@@ -27,15 +26,15 @@ class ConnectionReceiver(private val ci: CommandInvoker, private val port: Int) 
 
     private fun receive(host: InetAddress, port: Int) {
         io.logger.info("Запрос получен.")
-        var cw: CommandWrapper = decodeFromString(bytes.decodeToString().replace("\u0000", ""))
+        var cw: CommandWrapper = Json.decodeFromString(bytes.decodeToString().replace("\u0000", ""))
         val result: String
         if (cw.name == "help") {
             val list = ci.getAllCommandsWrapped()
-            cw.result = encodeToString(list)
+            cw.result = Json.encodeToString(list)
         } else {
             cw = ci.executeCommand(cw)
         }
-        result = encodeToString(cw)
+        result = Json.encodeToString(cw)
         io.logger.info("Результат загружен.")
         send(host, port, result)
     }

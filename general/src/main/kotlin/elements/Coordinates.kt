@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
  * @since 1.0
  */
 @Serializable
-class Coordinates(private val x: Int, private val y: Double) {
+class Coordinates(val x: Int, val y: Double) {
     init{
         if(x <= -827) throw InvalidElementValueException(x)
     }

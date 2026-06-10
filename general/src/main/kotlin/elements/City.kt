@@ -60,17 +60,9 @@ class City(
             if (value <= 0) throw InvalidElementValueException(value)
             field = value
         }
-    val id: Long = counter
+    var id: Long = -1
     @Contextual
     val creationDate: LocalDate = LocalDate.now()
-
-    companion object { private var counter: Long = 1 }
-
-    init{
-        if (id >= counter) {
-            counter = id + 1
-        }
-    }
 
     override fun compareTo(other: City): Int {
         return this.id.compareTo(other.id)
