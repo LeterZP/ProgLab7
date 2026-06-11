@@ -12,6 +12,7 @@ class CommandWrapper() {
     var syntax: String = ""
     var name: String = ""
     var result: String = ""
+    var validation: Boolean = true
 
     fun wrapCommand(c: Command) {
         command = c.getName()
@@ -20,9 +21,11 @@ class CommandWrapper() {
         describe = c.describe()
         syntax = c.getSyntax()
         name = c.getName()
+        validation = c.validation
     }
 
     fun validate(args: List<String>): Boolean {
+        if (!validation) return true
         if (args.size == argumentsAmount) return true
         if (args.size == 1) {
             try {

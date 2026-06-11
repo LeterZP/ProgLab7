@@ -48,3 +48,4 @@ save.json
 logs
 database
 db.cfg
+script*

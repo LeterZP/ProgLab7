@@ -14,6 +14,7 @@ import kotlinx.serialization.Serializable
 abstract class Command(protected open val ci: CommandInvokerInterface) {
     open val argumentsAmount: Int = 0
     open var result: String = ""
+    open var validation = true
 
     override fun toString(): String {
         if (getSyntax() == "") return getName() + getSyntax()

@@ -8,8 +8,6 @@ import java.io.IOException
 import java.time.LocalDate
 import java.util.Stack
 import java.util.stream.Collectors
-import kotlin.jvm.optionals.getOrNull
-import kotlin.jvm.optionals.toCollection
 
 /**
  * Класс для управления коллекцией, содержащей элементы типа [City].
@@ -70,6 +68,11 @@ class CollectionManager(val io: IOManager) {
     fun addElement(city: City) {
         io.logger.info("Добавление элемента...")
         db.addElement(city)
+        syncCollection()
+    }
+
+    fun updateElement(city: City) {
+        db.updateElement(city)
         syncCollection()
     }
 

@@ -95,4 +95,19 @@ class DatabaseManager(val dburl: String? = "jdbc:postgresql://localhost:5432/db"
         connect.close()
         return result
     }
+
+    fun updateElement(city: City): Int {
+        val connect = getConnection()
+        val query = "UPDATE city " +
+                "SET name = ?, coordinateX = ?, coordinateY = ?, area = ?, " +
+                "population = ?, metersAboveSeaLevel = ?, populationDensity = ?, governonName = ?, " +
+                "governonAge = ?, governonHeight = ?, climate = ?::climate, government = ?::government " +
+                "WHERE id = ?"
+        val st = connect.prepareStatement(query)
+        unparseCity(city, st)
+        st.setLong(13, city.id)
+        val result = st.executeUpdate()
+        connect.close()
+        return result
+    }
 }

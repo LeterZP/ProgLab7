@@ -2,6 +2,7 @@ package commands
 
 import core.CommandInvoker
 import elements.CityBuilder
+import exceptions.CollectionHasNoElementException
 import exceptions.InvalidAmountOfArgumentsException
 import exceptions.InvalidElementValueException
 
@@ -15,7 +16,8 @@ import exceptions.InvalidElementValueException
  * @since 1.0
  */
 class UpdateCommand(override val ci: CommandInvoker): Command(ci) {
-    override val argumentsAmount: Int = 1
+    override val argumentsAmount: Int = CityBuilder().size
+    override var validation: Boolean = false
 
     override fun execute(arguments: List<String>) {
         var arguments = arguments
@@ -29,6 +31,7 @@ class UpdateCommand(override val ci: CommandInvoker): Command(ci) {
         }
         arguments = arguments.minus(arguments[0])
         val creator = CityBuilder()
+        creator.strictCheck = false
         if (arguments.size != creator.size) throw InvalidAmountOfArgumentsException(this, arguments.size)
         var count = 0
         try {
@@ -37,10 +40,13 @@ class UpdateCommand(override val ci: CommandInvoker): Command(ci) {
                 if (count == creator.size-1) break
                 count++
             }
-            creator.update(ci.cm.getElement(id))
+            ci.cm.updateElement(creator.update(ci.cm.getElement(id)))
             result = "Элемент успешно обновлён.\n"
             ci.io.logger.info("Элемент обновлён.")
         } catch (e: InvalidElementValueException) {
+            result = e.message + "\n"
+            ci.io.logger.warning(e.message)
+        } catch (e: CollectionHasNoElementException) {
             result = e.message + "\n"
             ci.io.logger.warning(e.message)
         }

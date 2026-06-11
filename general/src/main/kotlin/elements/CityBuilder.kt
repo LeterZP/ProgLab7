@@ -79,6 +79,7 @@ class CityBuilder {
         "правительство (ARISTOCRACY | ANARCHY | KLEPTOCRACY | CORPORATOCRACY | JUNTA)"
     )
     val size: Int = 12
+    var strictCheck = true
 
     /**
      * Используется для получения названия и типа свойства класса.
@@ -131,6 +132,9 @@ class CityBuilder {
             throw InvalidElementValueException(value?:"")
         } catch (_: IllegalArgumentException) {
             throw InvalidElementValueException(value?:"")
+        } catch (_: InvalidElementValueException) {
+            if (!strictCheck) return
+            else throw InvalidElementValueException(value?:"")
         }
     }
 
@@ -171,7 +175,7 @@ class CityBuilder {
      *
      * @since 1.0
      */
-    fun update(city: City) {
+    fun update(city: City): City {
         if (name != null) city.name = name!!
         if (coordinateX != null && coordinateY != null)
             city.coordinates = Coordinates(coordinateX!!, coordinateY!!)
@@ -183,5 +187,6 @@ class CityBuilder {
             city.governon = Human(govName!!, govAge!!, govHeight!!)
         if (climate != null) city.climate = climate
         if (government != null) city.government = government
+        return city
     }
 }

@@ -97,7 +97,6 @@ class CommandInvoker(val io: IOManager, private val cm: ConnectionManager): Comm
                     }
                     list1
                 }) {
-                // getCommands()
                 if (instruction[0] !in commands.keys) throw CommandNotFoundException(instruction[0])
             }
             val command = commands[instruction[0]]!!
@@ -176,8 +175,10 @@ class CommandInvoker(val io: IOManager, private val cm: ConnectionManager): Comm
         if (command.argumentsAmount > 1) {
             val args = mutableListOf<String>()
             args.add(instruction[0])
+            if (instruction.size > 1) args.add(instruction[1])
             val creator = CityBuilder()
-            var count: Int = 0
+            if (!command.validation) creator.strictCheck = false
+            var count = 0
             while (true) {
                 val value: String = nextValue(creator.getField(count))
                 try {
@@ -187,12 +188,12 @@ class CommandInvoker(val io: IOManager, private val cm: ConnectionManager): Comm
                     io.write(e.message + "\n")
                     continue
                 }
-                if (count == creator.size-1) break
+                if (count == creator.size - 1) break
                 count++
             }
             return args.toList()
         } else if (!commands[instruction[0]]!!.validate(instruction.minus(instruction[0])))
-            throw InvalidElementValueException(instruction.minus(instruction[0]))
+                throw InvalidElementValueException(instruction.minus(instruction[0]))
         return instruction
     }
 

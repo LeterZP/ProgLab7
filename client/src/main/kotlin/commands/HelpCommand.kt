@@ -3,6 +3,7 @@ package commands
 import core.CommandInvoker
 import exceptions.CommandNotFoundException
 import exceptions.InvalidAmountOfArgumentsException
+import exceptions.InvalidElementValueException
 
 /**
  * Команда для вывода списка доступных команд.
@@ -14,6 +15,8 @@ import exceptions.InvalidAmountOfArgumentsException
  * @since 1.0
  */
 class HelpCommand(override val ci: CommandInvoker): Command(ci) {
+    override var validation: Boolean = false
+
     /**
      * Выдаёт полную информацию о команде.
      *
@@ -55,6 +58,8 @@ class HelpCommand(override val ci: CommandInvoker): Command(ci) {
                 }
             } else throw InvalidAmountOfArgumentsException(this, arguments.size)
         } catch (e: CommandNotFoundException) {
+            result = e.message + "\n"
+        } catch (e: InvalidAmountOfArgumentsException) {
             result = e.message + "\n"
         }
     }
