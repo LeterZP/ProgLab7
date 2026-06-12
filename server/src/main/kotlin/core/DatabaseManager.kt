@@ -31,6 +31,7 @@ class DatabaseManager(val dburl: String? = "jdbc:postgresql://localhost:5432/db"
         }
         val city = builder.create()
         city.id = row.getLong(1)
+        city.owner = row.getString(14)
         return city
     }
 
@@ -47,6 +48,7 @@ class DatabaseManager(val dburl: String? = "jdbc:postgresql://localhost:5432/db"
         st.setFloat(10, city.governon.height)
         st.setString(11, city.climate?.toString())
         st.setString(12, city.government?.toString())
+        st.setString(13, city.owner)
     }
 
     fun getAllElements(): Stack<City> {
@@ -67,8 +69,8 @@ class DatabaseManager(val dburl: String? = "jdbc:postgresql://localhost:5432/db"
         val connect = getConnection()
         val query = "INSERT INTO city(name, coordinateX, coordinateY, area, " +
                 "population, metersAboveSeaLevel, populationDensity, governonName, " +
-                "governonAge, governonHeight, climate, government) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::climate, ?::government)"
+                "governonAge, governonHeight, climate, government, owner) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::climate, ?::government, ?)"
         val st = connect.prepareStatement(query)
         unparseCity(city, st)
         val result = st.executeUpdate()
@@ -76,21 +78,23 @@ class DatabaseManager(val dburl: String? = "jdbc:postgresql://localhost:5432/db"
         return result
     }
 
-    fun removeElement(id: Long): Int {
+    fun removeElement(id: Long, owner: String): Int {
         val connect = getConnection()
-        val query = "DELETE FROM city WHERE id = ?"
+        val query = "DELETE FROM city WHERE id = ? AND owner = ?"
         val st = connect.prepareStatement(query)
         st.setLong(1, id)
+        st.setString(2, owner)
         val result = st.executeUpdate()
         connect.close()
         return result
     }
 
-    fun removeGreaterElements(id: Long): Int {
+    fun removeGreaterElements(id: Long, owner: String): Int {
         val connect = getConnection()
-        val query = "DELETE FROM city WHERE id > ?"
+        val query = "DELETE FROM city WHERE id > ? AND owner = ?"
         val st = connect.prepareStatement(query)
         st.setLong(1, id)
+        st.setString(2, owner)
         val result = st.executeUpdate()
         connect.close()
         return result
@@ -101,12 +105,64 @@ class DatabaseManager(val dburl: String? = "jdbc:postgresql://localhost:5432/db"
         val query = "UPDATE city " +
                 "SET name = ?, coordinateX = ?, coordinateY = ?, area = ?, " +
                 "population = ?, metersAboveSeaLevel = ?, populationDensity = ?, governonName = ?, " +
-                "governonAge = ?, governonHeight = ?, climate = ?::climate, government = ?::government " +
+                "governonAge = ?, governonHeight = ?, climate = ?::climate, government = ?::government, owner = ? " +
                 "WHERE id = ?"
         val st = connect.prepareStatement(query)
         unparseCity(city, st)
-        st.setLong(13, city.id)
+        st.setLong(14, city.id)
         val result = st.executeUpdate()
+        connect.close()
+        return result
+    }
+
+    fun getAllUsers(): ArrayList<String> {
+        val connect = getConnection()
+        val query = "SELECT login FROM \"user\""
+        val st = connect.createStatement()
+        val result = st.executeQuery(query)
+        connect.close()
+        val list = ArrayList<String>()
+        while (result.next()) {
+            list.add(result.getString(1))
+        }
+        list.sort()
+        return list
+    }
+
+    fun addUser(args: List<String>): Int {
+        val connect = getConnection()
+        val query = "INSERT INTO \"user\" VALUES (?, ?, ?)"
+        val st = connect.prepareStatement(query)
+        st.setString(1, args[0])
+        st.setString(2, args[1])
+        st.setString(3, args[2])
+        val result = st.executeUpdate()
+        connect.close()
+        return result
+    }
+
+    fun getSaltFromUser(login: String): String {
+        val connect = getConnection()
+        val query = "SELECT salt FROM \"user\" WHERE login = ?"
+        val st = connect.prepareStatement(query)
+        st.setString(1, login)
+        val resultSet = st.executeQuery()
+        val result: String
+        if (resultSet.next()) result = resultSet.getString(1)
+        else result = ""
+        connect.close()
+        return result
+    }
+
+    fun getHashFromUser(login: String): String {
+        val connect = getConnection()
+        val query = "SELECT password FROM \"user\" WHERE login = ?"
+        val st = connect.prepareStatement(query)
+        st.setString(1, login)
+        val resultSet = st.executeQuery()
+        val result: String
+        if (resultSet.next()) result = resultSet.getString(1)
+        else result = ""
         connect.close()
         return result
     }

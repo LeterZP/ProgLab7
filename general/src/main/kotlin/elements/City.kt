@@ -63,6 +63,7 @@ class City(
     var id: Long = -1
     @Contextual
     val creationDate: LocalDate = LocalDate.now()
+    var owner = ""
 
     override fun compareTo(other: City): Int {
         return this.id.compareTo(other.id)

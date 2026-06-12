@@ -49,16 +49,6 @@ class CollectionManager(val io: IOManager) {
     }
 
     /**
-     * Сортирует элементы коллекции.
-     *
-     * @since 1.0
-     */
-    fun sortElements() {
-        io.logger.info("Сортировка коллекции...")
-        collection.sort()
-    }
-
-    /**
      * Добавляет элемент в коллекцию.
      *
      * @param city Город типа [City], который нужно добавить в коллекцию.
@@ -194,9 +184,9 @@ class CollectionManager(val io: IOManager) {
      *
      * @since 1.0
      */
-    fun removeElement(id: Long) {
+    fun removeElement(id: Long, owner: String) {
         io.logger.info("Удаление элемента...")
-        if (db.removeElement(id) == 0) throw CollectionHasNoElementException(id)
+        if (db.removeElement(id, owner) == 0) throw CollectionHasNoElementException(id)
         syncCollection()
     }
 
@@ -207,14 +197,14 @@ class CollectionManager(val io: IOManager) {
      *
      * @since 1.0
      */
-    fun removeLast() {
+    fun removeLast(owner: String) {
         syncCollection()
         val id: Long = collection.stream()
             .map { city -> city.id }
             .max { id1, id2 -> id1.compareTo(id2) }
             .get()
         io.logger.info("Удаление последнего элемента...")
-        if (db.removeElement(id) == 0) throw CollectionHasNoElementException(-1)
+        if (db.removeElement(id, owner) == 0) throw CollectionHasNoElementException(-1)
     }
 
     /**
@@ -226,9 +216,9 @@ class CollectionManager(val io: IOManager) {
      *
      * @since 1.0
      */
-    fun removeGreater(id: Long): Int {
+    fun removeGreater(id: Long, owner: String): Int {
         io.logger.info("Удаление всех элементов больше заданного...")
-        val result = db.removeGreaterElements(id)
+        val result = db.removeGreaterElements(id, owner)
         syncCollection()
         return result
     }
@@ -238,9 +228,9 @@ class CollectionManager(val io: IOManager) {
      *
      * @since 1.0
      */
-    fun clearCollection() {
+    fun clearCollection(owner: String) {
         io.logger.info("Отчистка коллекции...")
-        db.removeGreaterElements(-1)
+        db.removeGreaterElements(-1, owner)
         syncCollection()
     }
 

@@ -17,7 +17,7 @@ class RemoveGreaterCommand(override val ci: CommandInvoker): Command(ci) {
     override fun execute(arguments: List<String>) {
         super.execute(arguments)
         try {
-            val count: Int = ci.cm.removeGreater(arguments[0].toLong())
+            val count: Int = ci.cm.removeGreater(arguments[0].toLong(), owner)
             result = "Удалено $count элементов.\n"
             ci.io.logger.info("Удалено $count элементов.")
         } catch (e: NumberFormatException) {

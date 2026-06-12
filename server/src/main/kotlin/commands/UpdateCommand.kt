@@ -5,6 +5,8 @@ import elements.CityBuilder
 import exceptions.CollectionHasNoElementException
 import exceptions.InvalidAmountOfArgumentsException
 import exceptions.InvalidElementValueException
+import exceptions.InvalidTokenException
+import exceptions.NoAccessException
 
 /**
  * Команда для обновления элемента коллекции.
@@ -40,13 +42,18 @@ class UpdateCommand(override val ci: CommandInvoker): Command(ci) {
                 if (count == creator.size-1) break
                 count++
             }
-            ci.cm.updateElement(creator.update(ci.cm.getElement(id)))
+            val city = ci.cm.getElement(id)
+            if (city.owner != owner) throw NoAccessException(owner, city.owner)
+            ci.cm.updateElement(creator.update(city))
             result = "Элемент успешно обновлён.\n"
             ci.io.logger.info("Элемент обновлён.")
         } catch (e: InvalidElementValueException) {
             result = e.message + "\n"
             ci.io.logger.warning(e.message)
         } catch (e: CollectionHasNoElementException) {
+            result = e.message + "\n"
+            ci.io.logger.warning(e.message)
+        } catch (e: NoAccessException) {
             result = e.message + "\n"
             ci.io.logger.warning(e.message)
         }

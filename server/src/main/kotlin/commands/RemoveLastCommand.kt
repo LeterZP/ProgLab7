@@ -16,7 +16,7 @@ class RemoveLastCommand(override val ci: CommandInvoker): Command(ci) {
     override fun execute(arguments: List<String>) {
         super.execute(arguments)
         try {
-            ci.cm.removeLast()
+            ci.cm.removeLast(owner)
             result = "Элемент успешно удалён.\n"
             ci.io.logger.info("Последний элемент удалён.")
         } catch (e: CollectionHasNoElementException) {

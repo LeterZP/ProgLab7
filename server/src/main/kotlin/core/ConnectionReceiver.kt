@@ -1,6 +1,7 @@
 package core
 
 import commands.CommandWrapper
+import exceptions.InvalidTokenException
 import exceptions.ProgramExitException
 import kotlinx.serialization.json.Json
 import java.net.DatagramPacket
@@ -28,11 +29,23 @@ class ConnectionReceiver(private val ci: CommandInvoker, private val port: Int) 
         io.logger.info("Запрос получен.")
         var cw: CommandWrapper = Json.decodeFromString(bytes.decodeToString().replace("\u0000", ""))
         val result: String
-        if (cw.name == "help") {
-            val list = ci.getAllCommandsWrapped()
-            cw.result = Json.encodeToString(list)
-        } else {
-            cw = ci.executeCommand(cw)
+        when (cw.name) {
+            "help" -> {
+                val list = if (cw.token in ci.um.tokens.values) ci.getAllCommandsWrapped() else listOf()
+                cw.result = Json.encodeToString(list)
+            }
+            "exit" -> {
+                ci.um.removeValidToken(cw.token)
+                cw.result = "Токен доступа инвалидирован.\n"
+                io.logger.info("Пользователь вышел.")
+            }
+            else -> {
+                try {
+                    cw = ci.executeCommand(cw)
+                } catch (e: InvalidTokenException) {
+                    cw.result = e.message + "\n"
+                }
+            }
         }
         result = Json.encodeToString(cw)
         io.logger.info("Результат загружен.")

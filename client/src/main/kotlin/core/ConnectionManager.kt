@@ -14,6 +14,8 @@ import kotlinx.serialization.json.Json.Default.encodeToString
 import kotlinx.serialization.json.Json.Default.decodeFromString
 
 class ConnectionManager(private val io: IOManager, private val host: InetAddress, private val port: Int) {
+    var token = ""
+
     fun askCommandList(): List<CommandWrapper> {
         val cw = CommandWrapper()
         cw.name = "help"
@@ -22,6 +24,7 @@ class ConnectionManager(private val io: IOManager, private val host: InetAddress
     }
 
     fun sendAndReceive(cw: CommandWrapper): CommandWrapper {
+        cw.token = token
         val address: SocketAddress = InetSocketAddress(host, port)
         val selector = Selector.open()
         val channel = DatagramChannel.open()
@@ -31,7 +34,7 @@ class ConnectionManager(private val io: IOManager, private val host: InetAddress
         var result = CommandWrapper()
         channel.configureBlocking(false)
         val key = channel.register(selector, SelectionKey.OP_READ)
-        for (i in 1..3) {
+        for (i in 0..3) {
             sendBuffer.position(0)
             channel.send(sendBuffer, address)
             try {
@@ -52,5 +55,13 @@ class ConnectionManager(private val io: IOManager, private val host: InetAddress
             }
         }
         return result
+    }
+
+    fun closeConnection() {
+        try {
+            val cw = CommandWrapper()
+            cw.name = "exit"
+            sendAndReceive(cw)
+        } catch (_: ConnectionException) {}
     }
 }

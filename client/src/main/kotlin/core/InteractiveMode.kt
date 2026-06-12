@@ -29,6 +29,7 @@ class InteractiveMode(private val io: IOManager, private val cm: ConnectionManag
                 io.write("=> ")
                 ci.readCommand()
             } catch (e: ProgramExitException) {
+                cm.closeConnection()
                 io.write(e.message + "\n")
                 isWorking = false
             } catch (e: IOException) {

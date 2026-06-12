@@ -5,7 +5,8 @@ import io.IOManager
 
 class ServerInitializer(val port: Int, val io: IOManager) {
     val cm = CollectionManager(io)
-    val ci = CommandInvoker(cm)
+    val um = UserManager(io)
+    val ci = CommandInvoker(cm, um)
     val cr = ConnectionReceiver(ci, port)
     lateinit var server: Thread
     lateinit var client: Thread

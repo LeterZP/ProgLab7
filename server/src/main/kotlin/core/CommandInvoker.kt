@@ -2,8 +2,9 @@ package core
 
 import commands.*
 import exceptions.CommandNotFoundException
+import exceptions.InvalidTokenException
 
-class CommandInvoker(val cm: CollectionManager): CommandInvokerInterface {
+class CommandInvoker(val cm: CollectionManager, val um: UserManager): CommandInvokerInterface {
     val commands: HashMap<String, Command> = HashMap()
     val io = cm.io
 
@@ -21,6 +22,8 @@ class CommandInvoker(val cm: CollectionManager): CommandInvokerInterface {
         initializeCommand(CountGreaterThenMetersAboveSeaLevelCommand(this))
         initializeCommand(PrintFieldAscendingGovernmentCommand(this))
         initializeCommand(PingCommand(this))
+        initializeCommand(ServerRegisterCommand(this))
+        initializeCommand(ServerLoginCommand(this))
     }
 
     /**
@@ -49,8 +52,15 @@ class CommandInvoker(val cm: CollectionManager): CommandInvokerInterface {
 
     override fun executeCommand(cw: CommandWrapper): CommandWrapper {
         val command = commands[cw.command] ?: throw CommandNotFoundException(cw.command)
+        val owner = um.getUserFromToken(cw.token)
+        if ("server" !in command.getName() && owner == "") throw InvalidTokenException(owner)
         io.logger.info("Выполняется команда ${cw.name}.")
-        command.execute(cw.arguments)
+        try {
+            command.owner = owner
+            command.execute(cw.arguments)
+        } catch (e: InvalidTokenException) {
+            cw.token = um.addValidToken(e.user)
+        }
         cw.result = command.result
         return cw
     }
@@ -58,6 +68,7 @@ class CommandInvoker(val cm: CollectionManager): CommandInvokerInterface {
     fun getAllCommandsWrapped(): List<CommandWrapper> {
         val list = mutableListOf<CommandWrapper>()
         for (command in commands.values) {
+            if ("server" in command.getName()) continue
             val wrapper = CommandWrapper()
             wrapper.wrapCommand(command)
             list.add(wrapper)

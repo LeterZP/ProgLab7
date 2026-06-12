@@ -1,12 +1,8 @@
 package core
 
 import commands.*
+import exceptions.*
 import elements.CityBuilder
-import exceptions.CommandNotFoundException
-import exceptions.ConnectionException
-import exceptions.InvalidElementValueException
-import exceptions.NoNextCommandException
-import exceptions.ProgramExitException
 import io.IOManager
 import java.util.Stack
 
@@ -23,9 +19,9 @@ import java.util.Stack
  *
  * @since 1.0
  */
-class CommandInvoker(val io: IOManager, private val cm: ConnectionManager): CommandInvokerInterface {
-    val commands: HashMap<String, CommandWrapper> = HashMap()
+class CommandInvoker(val io: IOManager, val cm: ConnectionManager): CommandInvokerInterface {
     private val nextArgument: Stack<String> = Stack<String>()
+    val commands: HashMap<String, CommandWrapper> = HashMap()
     val executionHistory = Stack<String>()
 
     init {
@@ -55,30 +51,17 @@ class CommandInvoker(val io: IOManager, private val cm: ConnectionManager): Comm
      * @since 1.0
      */
     override fun executeCommand(cw: CommandWrapper): CommandWrapper {
-        when (cw.name) {
-            "help" -> {
-                val help = HelpCommand(this)
-                help.execute(cw.arguments)
-                cw.result = help.result
-                return cw
-            }
-            "execute_script" -> {
-                val script = ExecuteScriptCommand(this)
-                script.execute(cw.arguments)
-                cw.result = script.result
-                return cw
-            }
-            "exit" -> {
-                val exit = ExitCommand(this)
-                exit.execute(cw.arguments)
-                cw.result = exit.result
-                return cw
-            }
-            else -> {
-                getCommands()
-                val result = cm.sendAndReceive(cw)
-                return result
-            }
+        if (cw.name in getStandardCommandsWrapped().map { c -> c.name }) {
+            val command: Command = getStandardCommands().stream()
+                .filter { c -> c.getName() == cw.name }
+                .toList()[0]
+            command.execute(cw.arguments)
+            cw.result = command.result
+            return cw
+        } else {
+            getCommands()
+            val result = cm.sendAndReceive(cw)
+            return result
         }
     }
 
@@ -92,7 +75,7 @@ class CommandInvoker(val io: IOManager, private val cm: ConnectionManager): Comm
         try {
             if (instruction[0] !in run {
                     val list1 = mutableListOf<String>()
-                    for (i in this@CommandInvoker.getStandardCommands()) {
+                    for (i in this@CommandInvoker.getStandardCommandsWrapped()) {
                         list1.add(i.name)
                     }
                     list1
@@ -166,13 +149,13 @@ class CommandInvoker(val io: IOManager, private val cm: ConnectionManager): Comm
         for (command in list) {
             initializeCommand(command)
         }
-        for (st in getStandardCommands()) {
+        for (st in getStandardCommandsWrapped()) {
             initializeCommand(st)
         }
     }
 
     fun validateCommand(command: CommandWrapper, instruction: List<String>): List<String> {
-        if (command.argumentsAmount > 1) {
+        if (command.argumentsAmount == CityBuilder().size) {
             val args = mutableListOf<String>()
             args.add(instruction[0])
             if (instruction.size > 1) args.add(instruction[1])
@@ -192,18 +175,35 @@ class CommandInvoker(val io: IOManager, private val cm: ConnectionManager): Comm
                 count++
             }
             return args.toList()
+        } else if (command.argumentsAmount > 1) {
+            val args = instruction.toMutableList()
+            while (args.size <= command.argumentsAmount) {
+                args.add("")
+            }
+            return args.toList()
         } else if (!commands[instruction[0]]!!.validate(instruction.minus(instruction[0])))
                 throw InvalidElementValueException(instruction.minus(instruction[0]))
         return instruction
     }
 
-    fun getStandardCommands(): List<CommandWrapper> {
-        val help = CommandWrapper()
-        help.wrapCommand(HelpCommand(this))
-        val exit = CommandWrapper()
-        exit.wrapCommand(ExitCommand(this))
-        val script = CommandWrapper()
-        script.wrapCommand(ExecuteScriptCommand(this))
-        return listOf(help, exit, script)
+    fun getStandardCommandsWrapped(): List<CommandWrapper> {
+        val result = ArrayList<CommandWrapper>()
+        val list = getStandardCommands()
+        for (command in list) {
+            val wrapper = CommandWrapper()
+            wrapper.wrapCommand(command)
+            result.add(wrapper)
+        }
+        return result.toList()
+    }
+
+    fun getStandardCommands(): List<Command> {
+        val commands = ArrayList<Command>()
+        commands.add(HelpCommand(this))
+        commands.add(ExitCommand(this))
+        commands.add(ExecuteScriptCommand(this))
+        commands.add(RegisterCommand(this))
+        commands.add(LoginCommand(this))
+        return commands.toList()
     }
 }

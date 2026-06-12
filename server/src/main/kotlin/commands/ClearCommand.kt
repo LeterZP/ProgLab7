@@ -14,7 +14,7 @@ import core.CommandInvoker
 class ClearCommand(override val ci: CommandInvoker): Command(ci) {
     override fun execute(arguments: List<String>) {
         super.execute(arguments)
-        ci.cm.clearCollection()
+        ci.cm.clearCollection(owner)
         result = "Коллекция отчищена.\n"
         ci.io.logger.info("Коллекция отчищена.")
     }

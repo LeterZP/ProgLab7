@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 class CommandWrapper() {
+    var token: String = ""
     var command: String = ""
     var argumentsAmount = 0
     var arguments: List<String> = listOf("")

@@ -20,7 +20,7 @@ class RemoveByIdCommand(override val ci: CommandInvoker): Command(ci) {
         var value: Long
         try {
             value = arguments[0].toLong()
-            ci.cm.removeElement(value)
+            ci.cm.removeElement(value, owner)
             result = "Элемент $value успешно удалён.\n"
             ci.io.logger.info("Элемент $value удалён.")
         }

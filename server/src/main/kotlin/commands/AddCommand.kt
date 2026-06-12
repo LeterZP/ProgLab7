@@ -27,7 +27,9 @@ class AddCommand(override val ci: CommandInvoker): Command(ci) {
                 if (count == creator.size-1) break
                 count++
             }
-            ci.cm.addElement(creator.create())
+            val city = creator.create()
+            city.owner = owner
+            ci.cm.addElement(city)
             ci.io.logger.info("Элемент успешно добавлен.")
             result = "Элемент успешно добавлен.\n"
         } catch (e: InvalidElementValueException) {

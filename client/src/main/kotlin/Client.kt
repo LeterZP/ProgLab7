@@ -15,5 +15,4 @@ fun main() {
     } catch (e: ProgramExitException) {
         io.write(e.message+"\n")
     }
-
 }
