@@ -7,6 +7,7 @@ import io.IOManager
 import java.io.IOException
 import java.time.LocalDate
 import java.util.Stack
+import java.util.concurrent.locks.ReentrantLock
 import java.util.stream.Collectors
 
 /**
@@ -24,13 +25,14 @@ import java.util.stream.Collectors
 class CollectionManager(val io: IOManager) {
     private val db: DatabaseManager = DatabaseManager()
     private var collection: Stack<City> = Stack<City>()
+    private val lock = ReentrantLock()
     val initializationTime: LocalDate = LocalDate.now()
 
     init {
         try {
             collection = db.getAllElements()
             io.logger.info("Коллекция успешно загружена.")
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             io.logger.warning("Файл сохранения не найден.")
         }
     }
@@ -45,7 +47,12 @@ class CollectionManager(val io: IOManager) {
     fun size(): Int {
         syncCollection()
         io.logger.info("Поиск длины коллекции...")
-        return collection.stream().count().toInt()
+        lock.lock()
+        try {
+            return collection.stream().count().toInt()
+        } finally {
+            lock.unlock()
+        }
     }
 
     /**
@@ -74,11 +81,16 @@ class CollectionManager(val io: IOManager) {
     fun reorderElements() {
         syncCollection()
         io.logger.info("Переворачивание коллекции...")
-        val newCollection: Stack<City> = Stack<City>()
-        for (element in collection.asReversed()) {
-            newCollection.push(element)
+        lock.lock()
+        try {
+            val newCollection: Stack<City> = Stack<City>()
+            for (element in collection.asReversed()) {
+                newCollection.push(element)
+            }
+            collection = newCollection
+        } finally {
+            lock.unlock()
         }
-        collection = newCollection
     }
 
     /**
@@ -93,10 +105,15 @@ class CollectionManager(val io: IOManager) {
     fun countHigherThen(metersAboveSeaLevel: Long): Int {
         syncCollection()
         io.logger.info("Поиск элементов выше заданного значения...")
-        return collection.stream()
-            .filter { x -> x.metersAboveSeaLevel > metersAboveSeaLevel }
-            .count()
-            .toInt()
+        lock.lock()
+        try {
+            return collection.stream()
+                .filter { x -> x.metersAboveSeaLevel > metersAboveSeaLevel }
+                .count()
+                .toInt()
+        } finally {
+            lock.unlock()
+        }
     }
 
     /**
@@ -113,12 +130,15 @@ class CollectionManager(val io: IOManager) {
     fun getElement(id: Long): City {
         syncCollection()
         io.logger.info("Поиск элемента...")
+        lock.lock()
         try {
             return collection.stream()
                 .filter { x -> x.id == id }
                 .collect(Collectors.toList())[0]
-        } catch (e: IndexOutOfBoundsException) {
+        } catch (_: IndexOutOfBoundsException) {
             throw CollectionHasNoElementException(id)
+        } finally {
+            lock.unlock()
         }
     }
 
@@ -132,10 +152,15 @@ class CollectionManager(val io: IOManager) {
     fun getAllElementsToString(): String {
         syncCollection()
         io.logger.info("Поиск всех элементов...")
-        return collection.stream()
-            .map { city -> city.toString() }
-            .collect(Collectors.toList())
-            .joinToString("\n")
+        lock.lock()
+        try {
+            return collection.stream()
+                .map { city -> city.toString() }
+                .collect(Collectors.toList())
+                .joinToString("\n")
+        } finally {
+            lock.unlock()
+        }
     }
 
     /**
@@ -148,10 +173,15 @@ class CollectionManager(val io: IOManager) {
     fun getSortedGovernments(): List<Government?> {
         syncCollection()
         io.logger.info("Поиск всех правительств...")
-        return collection.stream()
-            .sorted { city1, city2 -> compareValues(city1.government, city2.government) }
-            .map { city ->  city.government }
-            .collect(Collectors.toList())
+        lock.lock()
+        try {
+            return collection.stream()
+                .sorted { city1, city2 -> compareValues(city1.government, city2.government) }
+                .map { city -> city.government }
+                .collect(Collectors.toList())
+        } finally {
+            lock.unlock()
+        }
     }
 
     /**
@@ -165,14 +195,19 @@ class CollectionManager(val io: IOManager) {
         syncCollection()
         io.logger.info("Группировка элементов по именам...")
         val names: HashMap<String, Int> = HashMap()
-        val list = collection.stream()
-            .map { city -> city.name }
-            .collect(Collectors.toList())
-        for (name in list) {
-            names[name] = names[name] ?: 0
-            names[name] = names[name]!! + 1
+        lock.lock()
+        try {
+            val list = collection.stream()
+                .map { city -> city.name }
+                .collect(Collectors.toList())
+            for (name in list) {
+                names[name] = names[name] ?: 0
+                names[name] = names[name]!! + 1
+            }
+            return names
+        } finally {
+            lock.unlock()
         }
-        return names
     }
 
     /**
@@ -185,7 +220,6 @@ class CollectionManager(val io: IOManager) {
      * @since 1.0
      */
     fun removeElement(id: Long, owner: String) {
-        io.logger.info("Удаление элемента...")
         if (db.removeElement(id, owner) == 0) throw CollectionHasNoElementException(id)
         syncCollection()
     }
@@ -199,12 +233,17 @@ class CollectionManager(val io: IOManager) {
      */
     fun removeLast(owner: String) {
         syncCollection()
-        val id: Long = collection.stream()
-            .map { city -> city.id }
-            .max { id1, id2 -> id1.compareTo(id2) }
-            .get()
-        io.logger.info("Удаление последнего элемента...")
-        if (db.removeElement(id, owner) == 0) throw CollectionHasNoElementException(-1)
+        lock.lock()
+        try {
+            val id: Long = collection.stream()
+                .map { city -> city.id }
+                .max { id1, id2 -> id1.compareTo(id2) }
+                .get()
+            io.logger.info("Удаление последнего элемента...")
+            if (db.removeElement(id, owner) == 0) throw CollectionHasNoElementException(-1)
+        } finally {
+            lock.unlock()
+        }
     }
 
     /**
@@ -236,6 +275,11 @@ class CollectionManager(val io: IOManager) {
 
     fun syncCollection() {
         io.logger.info("Синхронизация коллекции...")
-        collection = db.getAllElements()
+        lock.lock()
+        try {
+            collection = db.getAllElements()
+        } finally {
+            lock.unlock()
+        }
     }
 }

@@ -2,32 +2,25 @@ package core
 
 import commands.CommandWrapper
 import exceptions.InvalidTokenException
-import exceptions.ProgramExitException
 import kotlinx.serialization.json.Json
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 
-class ConnectionReceiver(private val ci: CommandInvoker, private val port: Int) {
-    private var isWorking = true
-    private var waitingForCommand = false
-    private val socket = DatagramSocket(port, InetAddress.getLocalHost())
+class ConnectionReceiver(private val ci: CommandInvoker, private val socket: DatagramSocket) {
     private var bytes = ByteArray(32768)
     private val io = ci.io
 
-    fun checkConnection() {
-        if (!isWorking) throw ProgramExitException()
+    fun receive(): TaskManager.Packet {
         bytes = ByteArray(32768)
         val packet = DatagramPacket(bytes, bytes.size)
-        waitingForCommand = true
         socket.receive(packet)
-        waitingForCommand = false
-        if (isWorking) receive(packet.address, packet.port)
+        io.logger.info("Запрос получен.")
+        return TaskManager.Packet(packet.address, packet.port, bytes.decodeToString().replace("\u0000", ""))
     }
 
-    private fun receive(host: InetAddress, port: Int) {
-        io.logger.info("Запрос получен.")
-        var cw: CommandWrapper = Json.decodeFromString(bytes.decodeToString().replace("\u0000", ""))
+    fun process(message: String): String {
+        var cw: CommandWrapper = Json.decodeFromString(message)
         val result: String
         when (cw.name) {
             "help" -> {
@@ -49,20 +42,13 @@ class ConnectionReceiver(private val ci: CommandInvoker, private val port: Int) 
         }
         result = Json.encodeToString(cw)
         io.logger.info("Результат загружен.")
-        send(host, port, result)
+        return result
     }
 
-    private fun send(host: InetAddress, port: Int, response: String) {
+    fun send(host: InetAddress, port: Int, response: String) {
         bytes = response.toByteArray()
         val packet = DatagramPacket(bytes, bytes.size, host, port)
         socket.send(packet)
         io.logger.info("Результат отправлен.")
-    }
-
-    fun saveInterrupt() {
-        isWorking = false
-        if (waitingForCommand) {
-            send(socket.localAddress, port, "exit")
-        }
     }
 }
